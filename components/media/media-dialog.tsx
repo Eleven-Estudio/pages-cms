@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getSchemaByName } from "@/lib/schema";
 
 export interface MediaDialogHandle {
   open: () => void;
@@ -21,31 +22,47 @@ export interface MediaDialogHandle {
 }
 
 const MediaDialog = forwardRef(({
+  media,
   selected,
   onSubmit,
   maxSelected,
   initialPath,
-  children
+  children,
+  extensions
 }: {
-  selected: string[],
+  media?: string,
   onSubmit: (images: string[]) => void,
+  selected?: string[],
   maxSelected?: number,
   initialPath?: string,
-  children?: React.ReactNode
+  children?: React.ReactNode,
+  extensions?: string[]
 }, ref) => {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 
+  const configMedia = media
+    ? getSchemaByName(config.object, media, "media")
+    : config.object.media[0];
+
   const selectedImagesRef = useRef(selected || []);
+  const [selectedImages, setSelectedImages] = useState(selected || []);
   const [open, setOpen] = useState(false);
 
   const handleSelect = useCallback((newSelected: string[]) => {
     selectedImagesRef.current = newSelected;
+    setSelectedImages(newSelected);
   }, []);
 
   const handleSubmit = useCallback(() => {
     onSubmit(selectedImagesRef.current);
   }, [onSubmit]);
+
+  const handleUpload = useCallback((entry: any) => {
+    const newSelected = [...selectedImagesRef.current, entry.path];
+    selectedImagesRef.current = newSelected;
+    setSelectedImages(newSelected);
+  }, []);
 
   useImperativeHandle(ref, () => ({
     open: () => setOpen(true),
@@ -65,11 +82,25 @@ const MediaDialog = forwardRef(({
           <DialogDescription></DialogDescription>
         </DialogHeader>
         
-        <MediaView initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""}/>
-        {config.object.media?.input &&
+        <MediaView 
+          media={configMedia.name} 
+          extensions={extensions} 
+          initialSelected={selectedImages} 
+          onSelect={handleSelect} 
+          onUpload={handleUpload}
+          maxSelected={maxSelected} 
+          initialPath={initialPath || ""}
+        />
+        {configMedia.input &&
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="submit" onClick={handleSubmit}>Save changes</Button>
+              <Button 
+                type="submit" 
+                onClick={handleSubmit} 
+                disabled={selectedImages.length === 0}
+              >
+                Select
+              </Button>
             </DialogClose>
           </DialogFooter>
         }

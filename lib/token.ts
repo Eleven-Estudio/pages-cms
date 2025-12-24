@@ -1,5 +1,9 @@
+/**
+ * Token helper functions.
+ */
+
 import { cache } from "react";
-import { App, Octokit } from "octokit";
+import { App } from "octokit";
 import { getAuth } from "@/lib/auth";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { db } from "@/db";
@@ -11,6 +15,7 @@ import {
 import { and, eq, sql } from "drizzle-orm";
 import { User } from "@/types/user";
 
+// Get a token for a user (including collagborators who need to provide an owner/repo scope).
 const getToken = cache(async (user: User, owner: string, repo: string) => {
   if (user.githubId) return await getUserToken();
 
@@ -27,6 +32,7 @@ const getToken = cache(async (user: User, owner: string, repo: string) => {
   return installationToken
 });
 
+// Get the GitHub App installation token for a specific repository.
 const getInstallationToken = cache(async (owner: string, repo: string) => {
   const app = new App({
 		appId: process.env.GITHUB_APP_ID!,
@@ -40,7 +46,7 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
     where: eq(githubInstallationTokenTable.installationId, repoInstallation.data.id)
   });
 
-  if (tokenData && Math.floor(Date.now() / 1000) < tokenData.expiresAt - 60) {
+  if (tokenData && Date.now() < tokenData.expiresAt.getTime() - 60_000) {
     const token = await decrypt(tokenData.ciphertext, tokenData.iv);
     if (!token) throw new Error(`Token could not be retrieved and/or decrypted.`);
 
@@ -53,7 +59,7 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
 
   const { ciphertext, iv } = await encrypt(installationToken.data.token);
     
-  const expiresAt = Math.floor(new Date(installationToken.data.expires_at).getTime() / 1000)
+  const expiresAt = new Date(installationToken.data.expires_at)
 
   if (tokenData) {
     await db.update(githubInstallationTokenTable).set({
@@ -75,6 +81,7 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
   return installationToken.data.token;
 });
 
+// Get the GitHub user token.
 const getUserToken = cache(async () => {
   const { user } = await getAuth();
 	if (!user) throw new Error("User not found");

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useConfig } from "@/contexts/config-context";
-import { parseAndValidateConfig } from "@/lib/config"; 
+import { parseAndValidateConfig } from "@/lib/config";
 import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema";
 import {
   getFileExtension,
@@ -14,13 +14,14 @@ import {
 } from "@/lib/utils/file";
 import { EntryForm } from "./entry-form";
 import { EmptyCreate } from "@/components/empty-create";
-import { FileOptions } from "@/components/file-options";
+import { FileOptions } from "@/components/file/file-options";
 import { Message } from "@/components/message";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, EllipsisVertical, History } from "lucide-react";
+import { FilePath } from "@/components/file/file-path";
 
 export function EntryEditor({
   name = "",
@@ -224,6 +225,7 @@ export function EntryEditor({
             <Link
               className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
               href={navigateBack}
+              prefetch={true}
             >
               <ChevronLeft className="h-4 w-4"/>
             </Link>
@@ -342,7 +344,7 @@ export function EntryEditor({
       );
     }
   }
-
+  
   return (
     isLoading
       ? loadingSkeleton
@@ -354,6 +356,16 @@ export function EntryEditor({
         onSubmit={onSubmit}
         path={path}
         history={history}
+        // filePath={(path && schema?.type === 'collection')
+        //   ? <FilePath
+        //       path={path}
+        //       sha={sha}
+        //       type={schema.type}
+        //       name={name}
+        //       onRename={handleRename}
+        //     />
+        //   : undefined
+        // }
         options={path && sha &&
           <FileOptions
             path={path}

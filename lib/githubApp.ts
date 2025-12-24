@@ -1,5 +1,11 @@
+
+/**
+ * Helper functions to get GitHub Appinstallations info.
+ */
+
 import { createOctokitInstance } from "@/lib/utils/octokit";
 
+// Get all GitHub App installations for the authenticated user.
 const getInstallations = async (
   token: string,
   owners?: string[],
@@ -25,10 +31,11 @@ const getInstallations = async (
     installations = installations.concat(response.data.installations);
 
     if (owners) {
+      const lowercaseOwners = owners.map((o) => o.toLowerCase());
       for (const installation of installations) {
         const matches = filterById
           ? owners.includes(installation.account.id.toString()) // Match by ID
-          : owners.includes(installation.account.login.toLowerCase()); // Match by name
+          : lowercaseOwners.includes(installation.account.login.toLowerCase()); // Match by name
 
         if (matches && !matchedInstallations.find((m: any) => m.id === installation.id)) {
           matchedInstallations.push(installation);
@@ -48,6 +55,7 @@ const getInstallations = async (
   return matchedInstallations.length ? matchedInstallations : installations;
 };
 
+// Get all repositories for a GitHub App installation.)
 const getInstallationRepos = async (
   token: string,
   installationId: number,

@@ -8,6 +8,14 @@ import { db } from "@/db";
 import { userTable, githubUserTokenTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+/**
+ * Handles GitHub OAuth authentication.
+ * 
+ * GET /api/auth/github
+ * 
+ * Requires GitHub OAuth code and state.
+ */
+
 export async function GET(request: Request): Promise<Response> {
 	const { session } = await getAuth();
   if (session) return redirect("/");
@@ -79,16 +87,12 @@ export async function GET(request: Request): Promise<Response> {
 			}
 		});
 	} catch (e) {		
-    // the specific error message depends on the provider
+		console.error("GitHub auth error:", e);
 		if (e instanceof OAuth2RequestError) {
 			// invalid code
-			return new Response(null, {
-				status: 400
-			});
+			return new Response(null, { status: 400 });
 		}
-		return new Response(null, {
-			status: 500
-		});
+		return new Response(null, { status: 500 });
 	}
 }
 
